@@ -1,60 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_geocoding_api/google_geocoding_api.dart';
+import 'package:nominatim_geocoding/nominatim_geocoding.dart';
 
 class ForPickUpTab extends StatelessWidget {
   const ForPickUpTab({Key? key}) : super(key: key);
 
   Future<String> getAddressFromCoordinates(double latitude, double longitude) async {
     try {
-      print('Fetching address for coordinates: ($latitude, $longitude)');
-      const String googleApiKey = 'AIzaSyB1vuvlho95fEGdo9CgYxFJSON5FLXcLps'; // Replace with your actual API key
-      final api = GoogleGeocodingApi(googleApiKey);
-      final reversedSearchResults = await api.reverse(
-        '$latitude,$longitude',
-        language: 'en',
+      await NominatimGeocoding.init();
+      final result = await NominatimGeocoding.to.reverseGeoCoding(
+        Coordinate(latitude: latitude, longitude: longitude),
       );
-
-      if (reversedSearchResults.results.isNotEmpty) {
-        final address = reversedSearchResults.results.first;
-        final addressComponents = address.addressComponents ?? [];
-        final streetNumber = addressComponents.firstWhere(
-              (comp) => comp.types.contains('street_number'),
-          orElse: () => GoogleGeocodingAddressComponent(longName: ''),
-        ).longName;
-        final streetName = addressComponents.firstWhere(
-              (comp) => comp.types.contains('route'),
-          orElse: () => GoogleGeocodingAddressComponent(longName: ''),
-        ).longName;
-        final city = addressComponents.firstWhere(
-              (comp) => comp.types.contains('locality'),
-          orElse: () => GoogleGeocodingAddressComponent(longName: ''),
-        ).longName;
-        final state = addressComponents.firstWhere(
-              (comp) => comp.types.contains('administrative_area_level_1'),
-          orElse: () => GoogleGeocodingAddressComponent(longName: ''),
-        ).longName;
-        final country = addressComponents.firstWhere(
-              (comp) => comp.types.contains('country'),
-          orElse: () => GoogleGeocodingAddressComponent(longName: ''),
-        ).longName;
-        final formattedAddress = [
-          streetNumber,
-          streetName,
-          city,
-          state,
-          country,
-        ].where((component) => component.isNotEmpty).join(', ');
-        print('Address found: $formattedAddress');
-        return formattedAddress.isNotEmpty ? formattedAddress : 'Unknown location';
+      if (result != null && result.address != null) {
+        final address = result.address;
+        // Check available fields in the Address object and return a formatted address
+        return '${address.suburb ?? ''},${address.neighbourhood ?? ''}, ${address.city ?? ''}, ${address.postalCode ?? ''}, ${address.state ?? ''}, ${address.country ?? 'Unknown location'}';
+      } else {
+        return 'Unknown location';
       }
-      print('No address found.');
-      return 'Unknown location';
     } catch (e) {
-      print('Error fetching address: $e');
-      return 'Unknown location';
+      return 'Error: $e';
     }
   }
+
 
 
   void _showDeleteDialog(BuildContext context, String docId) {

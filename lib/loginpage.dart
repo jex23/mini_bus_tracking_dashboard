@@ -19,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
       String username = _usernameController.text;
       String password = _passwordController.text;
 
-      if (username == 'admin' && password == '1') {
+      if (username == 'administrator' && password == 'Password1') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MyApp()),
@@ -35,7 +35,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // Adding listener to handle Enter key press
     _passwordFocusNode.addListener(() {
       if (!_passwordFocusNode.hasFocus) {
         _login();
@@ -62,191 +61,195 @@ class _LoginPageState extends State<LoginPage> {
         ),
         child: Center(
           child: SingleChildScrollView(
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.7,
-              height: MediaQuery.of(context).size.height * 0.7,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12.0),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 15.0,
-                    offset: Offset(0, 5),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Determine layout based on screen width
+                bool isWideScreen = constraints.maxWidth > 600;
+
+                return Container(
+                  width: isWideScreen
+                      ? 600
+                      : MediaQuery.of(context).size.width * 0.9,
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 15.0,
+                        offset: Offset(0, 5),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.directions_bus),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.facebook),
-                                onPressed: () {},
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.home),
-                                onPressed: () {},
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 20),
-                          Text(
-                            'or use your email and password',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                TextFormField(
-                                  controller: _usernameController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Email',
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 16.0,
-                                      horizontal: 12.0,
-                                    ),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your email';
-                                    }
-                                    return null;
-                                  },
-                                  // Move focus to password field when Enter is pressed
-                                  onFieldSubmitted: (_) {
-                                    FocusScope.of(context).requestFocus(_passwordFocusNode);
-                                  },
-                                ),
-                                SizedBox(height: 16),
-                                TextFormField(
-                                  controller: _passwordController,
-                                  focusNode: _passwordFocusNode,
-                                  decoration: InputDecoration(
-                                    labelText: 'Password',
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 16.0,
-                                      horizontal: 12.0,
-                                    ),
-                                  ),
-                                  obscureText: true,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your password';
-                                    }
-                                    return null;
-                                  },
-                                  // Trigger login when Enter is pressed
-                                  onFieldSubmitted: (_) {
-                                    _login();
-                                  },
-                                ),
-                                SizedBox(height: 24),
-                                ElevatedButton(
-                                  onPressed: _login,
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: Size(double.infinity, 50),
-                                    backgroundColor: Colors.redAccent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8.0),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Sign In',
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                ),
-                                SizedBox(height: 16),
-                                TextButton(
-                                  onPressed: () {
-                                    // Handle forgot password
-                                  },
-                                  child: Text(
-                                    'Forgot your email or password?',
-                                    style: TextStyle(color: Colors.black54),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                  child: isWideScreen
+                      ? Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: _buildLoginForm(),
                       ),
-                    ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        flex: 1,
+                        child: _buildRightSideContent(),
+                      ),
+                    ],
+                  )
+                      : Column(
+                    children: [
+                      _buildLoginForm(),
+                      SizedBox(height: 16),
+                      _buildRightSideContent(),
+                    ],
                   ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.3,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.orangeAccent, Colors.deepOrangeAccent],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(12.0),
-                        bottomRight: Radius.circular(12.0),
-                      ),
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Hello, User!',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          Text(
-                            'Register with your personal details to use all of site features',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Handle sign up
-                            },
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.orangeAccent,
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.0),
-                              ),
-                            ),
-                            child: Text('Sign Up'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginForm() {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: Icon(Icons.directions_bus),
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: Icon(Icons.facebook),
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: Icon(Icons.home),
+                onPressed: () {},
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          Text(
+            'or use your email and password',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.black54,
+            ),
+          ),
+          SizedBox(height: 20),
+          Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _usernameController,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16.0,
+                      horizontal: 12.0,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    return null;
+                  },
+                  onFieldSubmitted: (_) {
+                    FocusScope.of(context).requestFocus(_passwordFocusNode);
+                  },
+                ),
+                SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  focusNode: _passwordFocusNode,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      vertical: 16.0,
+                      horizontal: 12.0,
+                    ),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your password';
+                    }
+                    return null;
+                  },
+                  onFieldSubmitted: (_) {
+                    _login();
+                  },
+                ),
+                SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _login,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: Size(double.infinity, 50),
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  ),
+                  child: Text(
+                    'Sign In',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRightSideContent() {
+    return Container(
+      padding: const EdgeInsets.all(24.0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orangeAccent, Colors.deepOrangeAccent],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(12.0),
+          bottomRight: Radius.circular(12.0),
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Ride Ready',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Your Jeepney Journey with Real-Time Tracking and Pickup Alerts on Map.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
       ),
     );

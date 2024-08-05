@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nominatim_geocoding/nominatim_geocoding.dart';
 
 class HomeTab extends StatefulWidget {
   @override
@@ -25,6 +26,9 @@ class _HomeTabState extends State<HomeTab> {
   int _availableSeats = 0;
   int _occupiedSeats = 0;
   bool _loadingSeats = true;
+  String _busAddress = 'Loading...'; // State variable for bus address
+  bool _iconsLoaded = false;
+
 
   @override
   void initState() {
@@ -36,14 +40,18 @@ class _HomeTabState extends State<HomeTab> {
     _listenToForPickupCount();
     _listenToForPickupData();
     _listenToSeatCounts();
+
   }
 
   Future<void> _initializeIcons() async {
     try {
       await Future.wait([
-        _setBusMarker(), // Initialize the new bus marker
+        _setBusMarker(),
         _setPickupIcon(),
       ]);
+      setState(() {
+        _iconsLoaded = true; // Set iconsLoaded to true when icons are ready
+      });
       print('Icons initialized successfully.');
     } catch (e) {
       print('Error initializing icons: $e');
@@ -98,8 +106,27 @@ class _HomeTabState extends State<HomeTab> {
     });
   }
 
+
+  Future<String> getAddressFromCoordinates(double latitude, double longitude) async {
+    try {
+      await NominatimGeocoding.init();
+      final result = await NominatimGeocoding.to.reverseGeoCoding(
+        Coordinate(latitude: latitude, longitude: longitude),
+      );
+      if (result != null && result.address != null) {
+        final address = result.address;
+        // Check available fields in the Address object and return a formatted address
+        return '${address.suburb ?? ''},${address.neighbourhood ?? ''}, ${address.city ?? ''}, ${address.postalCode ?? ''}, ${address.state ?? ''}, ${address.country ?? 'Unknown location'}';
+      } else {
+        return 'Unknown location';
+      }
+    } catch (e) {
+      return 'Error: $e';
+    }
+  }
+
   Future<void> _fetchBusCoordinates() async {
-    _database.child('/Bus/Location').onValue.listen((event) {
+    _database.child('/Bus/Location').onValue.listen((event) async {
       final data = event.snapshot.value as Map?;
       if (data != null) {
         final longitude = data['longitude']?.toString() ?? '0.0';
@@ -110,6 +137,17 @@ class _HomeTabState extends State<HomeTab> {
             double.tryParse(latitude) ?? 0.0,
             double.tryParse(longitude) ?? 0.0,
           );
+          _updateMarkers(); // Update markers with the new bus location
+        });
+
+        // Fetch the address from coordinates and update the state
+        final address = await getAddressFromCoordinates(
+          _location.latitude,
+          _location.longitude,
+        );
+
+        setState(() {
+          _busAddress = address;
         });
 
         if (_mapController != null) {
@@ -162,6 +200,7 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   void _updateMarkers() {
+    if (!_iconsLoaded) return; // Do not update markers if icons are not loaded
     final markers = <Marker>{};
 
     // Add pickup markers
@@ -318,31 +357,7 @@ class _HomeTabState extends State<HomeTab> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.people,
-                        color: Colors.blue,
-                        size: 24,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        _loadingUserCount ? 'Loading...' : 'Number of Users: $_userCount',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: _showPickupData,
+              Expanded(
                 child: Card(
                   elevation: 5,
                   shape: RoundedRectangleBorder(
@@ -353,63 +368,135 @@ class _HomeTabState extends State<HomeTab> {
                     child: Row(
                       children: [
                         Icon(
-                          Icons.directions_car,
-                          color: Colors.green,
+                          Icons.people,
+                          color: Colors.blue,
                           size: 24,
                         ),
                         SizedBox(width: 8),
-                        Text(
-                          _loadingForPickupCount ? 'Loading...' : 'For Pick Up: $_forPickupCount',
-                          style: TextStyle(fontSize: 16),
+                        Expanded(
+                          child: Text(
+                            _loadingUserCount ? 'Loading...' : 'Number of Users: $_userCount',
+                            style: TextStyle(fontSize: 16),
+                            overflow: TextOverflow.ellipsis, // Handle long text
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ),
               ),
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.event_seat,
-                        color: Colors.red,
-                        size: 24,
+              Expanded(
+                child: GestureDetector(
+                  onTap: _showPickupData,
+                  child: Card(
+                    elevation: 5,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Container(
+                      padding: EdgeInsets.all(8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.directions_car,
+                            color: Colors.green,
+                            size: 24,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _loadingForPickupCount ? 'Loading...' : 'For Pick Up: $_forPickupCount',
+                              style: TextStyle(fontSize: 16),
+                              overflow: TextOverflow.ellipsis, // Handle long text
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(width: 8),
-                      Text(
-                        _loadingSeats ? 'Loading...' : 'Available Seats: $_availableSeats',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-              Card(
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              Expanded(
+                child: Card(
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.directions_bus_filled_outlined,
+                          color: Colors.red,
+                          size: 24,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Bus Location: $_busAddress',
+                            style: TextStyle(fontSize: 16),
+                            overflow: TextOverflow.visible, // Allow text to wrap
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Container(
-                  padding: EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.event_seat,
-                        color: Colors.red,
-                        size: 24,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        _loadingSeats ? 'Loading...' : 'Occupied Seats: $_occupiedSeats',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
+              ),
+              Expanded(
+                child: Card(
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.event_seat,
+                          color: Colors.green,
+                          size: 24,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _loadingSeats ? 'Loading...' : 'Available Seats: $_availableSeats',
+                            style: TextStyle(fontSize: 16),
+                            overflow: TextOverflow.ellipsis, // Handle long text
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Card(
+                  elevation: 5,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.event_seat,
+                          color: Colors.red,
+                          size: 24,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _loadingSeats ? 'Loading...' : 'Occupied Seats: $_occupiedSeats',
+                            style: TextStyle(fontSize: 16),
+                            overflow: TextOverflow.ellipsis, // Handle long text
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

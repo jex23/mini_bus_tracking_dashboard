@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'home_tab.dart';
 import 'user_tab.dart';
 import 'for_pickup_tab.dart';
+import 'loginpage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -45,6 +46,44 @@ class _MyHomePageState extends State<MyHomePage> {
     });
     super.initState();
   }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to log out?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _logout();
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _logout() {
+    // Add your logout logic here, e.g., clearing user session or tokens
+
+    // Navigate to LoginPage
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +161,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 icon: const Icon(Icons.local_shipping),
               ),
+              SideMenuItem(
+                title: 'Logout',
+                onTap: (index, _) {
+                  _showLogoutDialog();
+                },
+                icon: const Icon(Icons.logout),
+              ),
+
             ],
           ),
           const VerticalDivider(width: 0),

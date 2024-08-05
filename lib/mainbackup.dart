@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Dashboard Login',
+      title: 'Hello James App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -40,7 +40,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dashboard Login'),
+        title: Text('Hello James App'),
       ),
       body: Center(
         child: Column(
